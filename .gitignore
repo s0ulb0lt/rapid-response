@@ -1,0 +1,5 @@
+yolo/
+test/
+train/
+valid/
+yolo11x.pt
