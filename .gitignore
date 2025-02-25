@@ -18,3 +18,12 @@ test-v6/
 train-v6/
 valid-v6/
 yolo11x.pt
+yolo11l.pt
+yolo11m.pt
+yolo12m.pt
+yolo11s.pt
+yolo11n_HIT_V1.engine
+yolo11n_HIT_V1.onnx
+yolo11n_HIT_V1.pt
+yolo11n.pt
+yolo11m_v5.pt
