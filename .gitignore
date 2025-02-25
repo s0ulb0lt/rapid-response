@@ -27,3 +27,5 @@ yolo11n_HIT_V1.onnx
 yolo11n_HIT_V1.pt
 yolo11n.pt
 yolo11m_v5.pt
+**/best.pt
+**/last.pt

@@ -1,0 +1,13 @@
+train: ../train-new/images
+val: ../valid-new/images
+test: ../test-new/images
+
+nc: 5
+names: ['Bicycle', 'Car', 'DontCare', 'OtherVehicle', 'Person']
+
+roboflow:
+  workspace: rapidresponse
+  project: rapidresponse_hit_uav
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/rapidresponse/rapidresponse_hit_uav/dataset/3
