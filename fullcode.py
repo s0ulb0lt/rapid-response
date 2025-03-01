@@ -14,6 +14,7 @@ from covplan import find_min
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer
 import av
+import math
 
 st.set_page_config(
     page_title="Rapid Response Dash",
@@ -215,7 +216,7 @@ if st.button("Generate Mission"):
     n_clusters = 1
     r=10
     inp_file = 'mission.txt'
-    width = 30
+    width = 2 * math.tan(math.degrees(127/2)) * st.session_state['m_alt'] - 2
     no_hd = 0
 
     st.session_state['angle']=find_min(inp_file, width=width, num_hd=no_hd, num_clusters=n_clusters, radius=r, verbose=True)
