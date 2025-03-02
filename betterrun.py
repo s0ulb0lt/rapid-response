@@ -50,11 +50,11 @@ import numpy as np
 from ultralytics import YOLO
 
 # Load the YOLO11 model
-model = YOLO("yolo11n.pt")
+model = YOLO("yolo11m_v6.pt")
 
 # Open the video file
 video_path = "path/to/video.mp4"
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(video_path)
 
 # Store the track history
 track_history = defaultdict(lambda: [])
