@@ -29,7 +29,7 @@ st.sidebar.text_input("Mission Altitude", key="m_alt")
 st.sidebar.text_input("Mission Speed", key="m_spd")
 
 with st.form('update_map'):
-    map_view = folium.Map(location=[-35.363143, 149.165243], zoom_start=16)
+    map_view = folium.Map(location=[37.4116716675053, -121.9964139161828], zoom_start=16)
     if not st.session_state["people_found"] == 0:
         for person in st.session_state["people_found"]:
             folium.Marker(
@@ -46,7 +46,7 @@ with st.form('update_map'):
                     [float(line_array[1]) / float(10 ** 7), float(line_array[2]) / float(10 ** 7)], popup=line_array[0]
                 ).add_to(map_view)
     folium.Marker(
-        [-35.363143, 149.165243], popup="-35.363143, 149.165243", tooltip="Home"
+        [-35.363143, 149.165243], popup="37.4116716675053, -121.9964139161828", tooltip="Home"
     ).add_to(map_view)
     Draw(export=True).add_to(map_view)
     st_data = st_folium(map_view, use_container_width=True, height=1000)
