@@ -37,10 +37,14 @@ with st.form('update_map'):
             ).add_to(map_view)
     if not st.session_state['plan'] == 0:
         line = folium.PolyLine(locations=st.session_state['plan'], color='blue', weight=2, opacity=0.8).add_to(map_view)
-    # for i in st.session_state['plan']:
-    #     folium.Marker(
-    #         [i[0], i[1]], popup=st.session_state['plan'].index(i)
-    #     ).add_to(map_view)
+    with open("people.txt", "r") as file:
+        people_array = [line.strip() for line in file]
+        if len(people_array) >= 1:
+            for i in people_array:
+                line_array = i.split("\t")
+                folium.Marker(
+                    [float(line_array[1]) / float(10 ** 7), float(line_array[2]) / float(10 ** 7)], popup=line_array[0]
+                ).add_to(map_view)
     folium.Marker(
         [-35.363143, 149.165243], popup="-35.363143, 149.165243", tooltip="Home"
     ).add_to(map_view)
