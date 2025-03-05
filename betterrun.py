@@ -62,7 +62,7 @@ print("test2")
 
 
 # Open the video file
-cap = cv2.VideoCapture("DJI_0004.MOV", cv2.CAP_FFMPEG)
+cap = cv2.VideoCapture(cv2.CAP_MSMF)
 
 print("test3")
 # Store the track history
@@ -74,10 +74,17 @@ track_history = defaultdict(lambda: [])
 
 # Loop through the video frames
 # with open("people.txt", "w") as file:
+counter = 0
 while True:
+    ret, frame = cap.read()
+    counter+= 1
+    if not counter % 6:
+        if cv2.waitKey(1) == ord("q"):
+            break
+        continue
+    counter = 0
     print(cap.isOpened())
     # Read a frame from the video
-    ret, frame = cap.read()
     print("next")
 
     # if ret:
