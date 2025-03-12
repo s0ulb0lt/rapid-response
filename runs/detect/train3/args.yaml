@@ -1,19 +1,19 @@
 task: detect
 mode: train
-model: yolo11x.pt
-data: data.yaml
-epochs: 100
+model: yolo11l.pt
+data: pop.yaml
+epochs: 80
 time: null
 patience: 100
-batch: 16
+batch: 0.9
 imgsz: 640
 save: true
 save_period: -1
-cache: false
-device: null
-workers: 8
+cache: disk
+device: 0
+workers: 0
 project: null
-name: train3
+name: train18
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -49,7 +49,8 @@ stream_buffer: false
 visualize: false
 augment: false
 agnostic_nms: false
-classes: null
+classes:
+- 0
 retina_masks: false
 embed: null
 show: false
@@ -103,4 +104,4 @@ erasing: 0.4
 crop_fraction: 1.0
 cfg: null
 tracker: botsort.yaml
-save_dir: runs\detect\train3
+save_dir: runs\detect\train18

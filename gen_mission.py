@@ -71,7 +71,7 @@ if st.button("Generate Mission"):
     n_clusters = 1
     r=10
     inp_file = 'mission.txt'
-    width = 2.00 * math.tan(math.degrees(127/2)) * float(st.session_state['m_alt']) - 2.00
+    width = 2.00 * math.tan(math.degrees(127/2)) * float(st.session_state['m_alt'])
     no_hd = 0
 
     st.session_state['angle']=find_min(inp_file, width=width, num_hd=no_hd, num_clusters=n_clusters, radius=r, verbose=True)
