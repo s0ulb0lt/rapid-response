@@ -1,81 +1,84 @@
+from collections import defaultdict
+from threading import Thread
+import time
+import argparse
+from pymavlink import mavutil
+
+import cv2
 import numpy as np
+from ultralytics import YOLO
 import os
-import pycuda.driver as cuda
-import pycuda.autoinit
-import tensorrt as trt
 
-import matplotlib.pyplot as plt
-from PIL import Image
 
-# Filenames of TensorRT plan file and input/output images.
-engine_file = "yolo11n_HIT_V1.engine"
-input_file  = "input.ppm"
-output_file = "output.ppm"
+print("test")
 
-def preprocess(image):
-    # Mean normalization
-    mean = np.array([0.485, 0.456, 0.406]).astype('float32')
-    stddev = np.array([0.229, 0.224, 0.225]).astype('float32')
-    data = (np.asarray(image).astype('float32') / float(255.0) - mean) / stddev
-    # Switch from HWC to to CHW order
-    return np.moveaxis(data, 2, 0)
+parser = argparse.ArgumentParser(description='ML Script')
+parser.add_argument('-rc','--run_connection', help='Run the MAVLINK connection or not? (y/n)', required=True)
+args = vars(parser.parse_args())
 
-def postprocess(data):
-    num_classes = 21
-    # create a color palette, selecting a color for each class
-    palette = np.array([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
-    colors = np.array([palette*i%255 for i in range(num_classes)]).astype("uint8")
-    # plot the segmentation predictions for 21 classes in different colors
-    img = Image.fromarray(data.astype('uint8'), mode='P')
-    img.putpalette(colors)
-    return img
+model = YOLO("yolo11m_v6.pt")
 
-def load_engine(engine_file_path):
-    assert os.path.exists(engine_file_path)
-    print("Reading engine from file {}".format(engine_file_path))
-    with open(engine_file_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
-        return runtime.deserialize_cuda_engine(f.read())
-    
-def infer(engine, input_file, output_file):
-    print("Reading input image from file {}".format(input_file))
-    with Image.open(input_file) as img:
-        input_image = preprocess(img)
-        image_width = img.width
-        image_height = img.height
+track_history = defaultdict(lambda: [])
 
-    with engine.create_execution_context() as context:
-        # Set input shape based on image dimensions for inference
-        context.set_binding_shape(engine.get_binding_index("input"), (1, 3, image_height, image_width))
-        # Allocate host and device buffers
-        bindings = []
-        for binding in engine:
-            binding_idx = engine.get_binding_index(binding)
-            size = trt.volume(context.get_binding_shape(binding_idx))
-            dtype = trt.nptype(engine.get_binding_dtype(binding))
-            if engine.binding_is_input(binding):
-                input_buffer = np.ascontiguousarray(input_image)
-                input_memory = cuda.mem_alloc(input_image.nbytes)
-                bindings.append(int(input_memory))
-            else:
-                output_buffer = cuda.pagelocked_empty(size, dtype)
-                output_memory = cuda.mem_alloc(output_buffer.nbytes)
-                bindings.append(int(output_memory))
+if args["run_connection"] == "y":
+    connection = mavutil.mavlink_connection('0.0.0.0:14550')
+    connection.wait_heartbeat()
+    print("Heartbeat from system (system %u component %u)" % (connection.target_system, connection.target_component))
 
-        stream = cuda.Stream()
-        # Transfer input data to the GPU.
-        cuda.memcpy_htod_async(input_memory, input_buffer, stream)
-        # Run inference
-        context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
-        # Transfer prediction output from the GPU.
-        cuda.memcpy_dtoh_async(output_buffer, output_memory, stream)
-        # Synchronize the stream
-        stream.synchronize()
+class TCam(object):
+    def __init__(self):
+        self.video_capture = cv2.VideoCapture(cv2.CAP_DSHOW)
+        self.video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+       
+        self.FPS = 1/30
+        self.FPS_MS = int(self.FPS * 1000)
+        
+        self.thread = Thread(target=self.update, args=())
+        self.thread.daemon = True
+        self.thread.start()
+        
+    def update(self):
+        while True:
+            if self.video_capture.isOpened():
+                (self.ret, self.frame) = self.video_capture.read()
+            time.sleep(self.FPS)
+            
+    def show_frame(self, ret_frame):
+        cv2.imshow('RapidResponse', ret_frame)
+        cv2.waitKey(self.FPS_MS)
 
-    with postprocess(np.reshape(output_buffer, (image_height, image_width))) as img:
-        print("Writing output image to file {}".format(output_file))
-        img.convert('RGB').save(output_file, "PPM")
+with open("people.txt", "w") as file:
+    if __name__ == '__main__':
+        cap = TCam()
+        while True:
+            try:
+                results = model.track(cap.frame, persist=True, )
+                annotated_frame = results[0].plot()
+                try:
+                    boxes = results[0].boxes.xywh.cpu()
+                    track_ids = results[0].boxes.id.int().cpu().tolist()
+                    classes = results[0].boxes.cls.cpu()
+                    print("Detection")
+                except:
+                    print("None")
+                    cap.show_frame(annotated_frame) 
+                    continue
 
-plt.imshow(Image.open(input_file))
+                for box, track_id, cls in zip(boxes, track_ids, classes):
+                    x, y, w, h = box
+                    track = track_history[track_id]
+                    track.append((float(x), float(y))) 
+                    if len(track) > 10 and cls == 4: 
+                        track.pop(0)
+                        print("POSSIBLE PERSONM!!!!")
+                        if args["run_connection"] == "y":
+                            msg = connection.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                            print(msg)
+                            file.write(str(track_id) + "\t" + str(msg.lat) + "\t" + str(msg.lon) + "\n")
+                    
+                    points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                    cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
-with load_engine(engine_file) as engine:
-    infer(engine, input_file, output_file)
+                cap.show_frame(annotated_frame)
+            except AttributeError:
+                pass
